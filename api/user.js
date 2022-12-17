@@ -2,6 +2,7 @@ const { PrismaClient, Prisma } = require("@prisma/client");
 const prisma = new PrismaClient();
 const bcrypt = require("bcrypt");
 const _ = require("lodash");
+const Joi = require("joi");
 
 /**
  * REST API endpoints for user
@@ -10,6 +11,11 @@ const _ = require("lodash");
 module.exports = (app) => {
   app.post("/signup", async (req, res) => {
     console.log("Hitting signup API...");
+    // Validate the user input
+    let { error } = validate(req.body);
+    // Return 400 if the user input is incorrect
+    if (error) return res.status(400).send(error.details[0].message);
+
     let { firstName, lastName, email, password } = req.body;
 
     // Salt and Hash
@@ -39,4 +45,15 @@ module.exports = (app) => {
     // Send handpicked user information as a result
     res.send(_.pick(user, ["id", "firstName", "lastName", "email"]));
   });
+
+  function validate(req) {
+    const schema = Joi.object({
+      firstName: Joi.string().max(30).required(),
+      lastName: Joi.string().max(30).required(),
+      email: Joi.string().max(255).required().email(),
+      password: Joi.string().min(5).max(255).required(),
+    });
+
+    return schema.validate(req);
+  }
 };
