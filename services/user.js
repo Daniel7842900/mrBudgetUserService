@@ -1,7 +1,12 @@
-const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+// const { PrismaClient } = require("@prisma/client");
+// const prisma = new PrismaClient();
 const UserRepository = require("../database/repository/user");
-const { validateSignup, generateAuthToken } = require("../utils/index");
+const {
+  validateSignup,
+  generateAuthToken,
+  generateSalt,
+  generateHash,
+} = require("../utils/index");
 const createError = require("http-errors");
 const bcrypt = require("bcrypt");
 
@@ -22,18 +27,14 @@ class UserService {
     const { firstName, lastName, email, password } = userInput;
 
     // Find if the user exists in the database
-    let user = await prisma.user.findUnique({
-      where: {
-        email: email,
-      },
-    });
+    let user = await this.repository.findUser(email);
 
     // Return 400 if the user already exists
     if (user) throw createError(400, "User already registered.");
 
-    // Salt and Hash
-    const salt = await bcrypt.genSalt(10);
-    const hashed = await bcrypt.hash(password, salt);
+    // Generate Salt and Hash
+    const salt = await generateSalt();
+    const hashed = await generateHash(password, salt);
 
     let newUser = {
       firstName: firstName,
@@ -43,7 +44,7 @@ class UserService {
     };
 
     // Create a user in the database with the given data
-    user = await prisma.user.create({ data: newUser });
+    user = await this.repository.createUser(newUser);
 
     // Generate a token
     const token = generateAuthToken({ id: user.id });

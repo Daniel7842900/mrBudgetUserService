@@ -1,5 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Joi = require("joi");
+const bcrypt = require("bcrypt");
 require("dotenv").config();
 
 function generateAuthToken(payload) {
@@ -18,7 +19,19 @@ function validateSignup(req) {
   return schema.validate(req);
 }
 
+async function generateSalt() {
+  const salt = await bcrypt.genSalt(10);
+  return salt;
+}
+
+async function generateHash(password, salt) {
+  const hash = await bcrypt.hash(password, salt);
+  return hash;
+}
+
 module.exports = {
   generateAuthToken: generateAuthToken,
   validateSignup: validateSignup,
+  generateSalt: generateSalt,
+  generateHash: generateHash,
 };
