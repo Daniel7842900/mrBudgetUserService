@@ -4,6 +4,12 @@ const express = require("express");
 // Middlewares
 var cors = require("cors");
 const bodyParser = require("body-parser");
+const dotenv = require("dotenv").config();
+
+if (!process.env.jwtPrivateKey) {
+  console.error("FATAL ERROR: jwtPrivateKey is not defined.");
+  process.exit(1);
+}
 
 // Create an Express app
 const app = express();
