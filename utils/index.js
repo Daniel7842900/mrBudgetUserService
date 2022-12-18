@@ -19,6 +19,20 @@ function validateSignup(req) {
   return schema.validate(req);
 }
 
+function validateLogin(req) {
+  const schema = Joi.object({
+    email: Joi.string().max(255).required().email(),
+    password: Joi.string().min(5).max(255).required(),
+  });
+
+  return schema.validate(req);
+}
+
+async function validatePassword(inputPassword, dbPassword) {
+  const validPassword = await bcrypt.compare(inputPassword, dbPassword);
+  return validPassword;
+}
+
 async function generateSalt() {
   const salt = await bcrypt.genSalt(10);
   return salt;
@@ -32,6 +46,8 @@ async function generateHash(password, salt) {
 module.exports = {
   generateAuthToken: generateAuthToken,
   validateSignup: validateSignup,
+  validateLogin: validateLogin,
+  validatePassword: validatePassword,
   generateSalt: generateSalt,
   generateHash: generateHash,
 };

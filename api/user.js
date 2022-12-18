@@ -21,6 +21,7 @@ module.exports = (app) => {
     "/signup",
     asyncHandler(async (req, res, next) => {
       console.log("Hitting signup API...");
+
       let result;
       try {
         result = await service.signUp(req.body);
@@ -38,39 +39,19 @@ module.exports = (app) => {
     })
   );
 
-  app.post("/login", async (req, res) => {
+  app.post("/login", async (req, res, next) => {
     console.log("Hitting login API...");
-    let { error } = validateLogin(req.body);
-    if (error) return res.status(400).send(error.details[0].message);
 
-    let { email, password } = req.body;
+    let result;
+    try {
+      result = await service.logIn(req.body);
+    } catch (error) {
+      return next(error);
+    }
 
-    let user = await prisma.user.findUnique({
-      where: {
-        email: email,
-      },
-    });
-
-    // Return 400 if the user doesn't exist
-    if (!user) return res.status(400).send("Invalid email or password.");
-
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword)
-      return res.status(400).send("Invalid email or password.");
-
-    const token = generateAuthToken({ id: user.id });
-
-    res.send(token);
+    // Send a result (token)
+    res.send(result);
   });
-
-  function validateLogin(req) {
-    const schema = Joi.object({
-      email: Joi.string().max(255).required().email(),
-      password: Joi.string().min(5).max(255).required(),
-    });
-
-    return schema.validate(req);
-  }
 
   app.use((error, req, res, next) => {
     // Sets HTTP status code

@@ -12,6 +12,7 @@ class UserRepository {
   }
 
   async findUser(email) {
+    // Find the user in the database
     let user = await prisma.user.findUnique({
       where: {
         email: email,
