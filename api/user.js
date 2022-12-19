@@ -1,14 +1,6 @@
-const { PrismaClient, Prisma, User } = require("@prisma/client");
-const prisma = new PrismaClient();
-const bcrypt = require("bcrypt");
 const _ = require("lodash");
-const Joi = require("joi");
-const jwt = require("jsonwebtoken");
 const asyncHandler = require("express-async-handler");
-const createError = require("http-errors");
-const { generateAuthToken } = require("../utils/index");
 const UserService = require("../services/user");
-require("dotenv").config();
 
 /**
  * REST API endpoints for user
@@ -39,19 +31,22 @@ module.exports = (app) => {
     })
   );
 
-  app.post("/login", async (req, res, next) => {
-    console.log("Hitting login API...");
+  app.post(
+    "/login",
+    asyncHandler(async (req, res, next) => {
+      console.log("Hitting login API...");
 
-    let result;
-    try {
-      result = await service.logIn(req.body);
-    } catch (error) {
-      return next(error);
-    }
+      let result;
+      try {
+        result = await service.logIn(req.body);
+      } catch (error) {
+        return next(error);
+      }
 
-    // Send a result (token)
-    res.send(result);
-  });
+      // Send a result (token)
+      res.send(result);
+    })
+  );
 
   app.use((error, req, res, next) => {
     // Sets HTTP status code
