@@ -4,22 +4,26 @@ const prisma = new PrismaClient();
 const app = require("../../index");
 require("dotenv").config();
 
-const createUser = jest.fn();
-const getUser = jest.fn();
-
 describe("/user", () => {
   describe("POST /signup", () => {
     describe("successful when user input is passed", () => {
-      // it("should return 200 if an account is successfully created", async () => {
-      //   const response = await request(app).post("/signup").send({
-      //     firstName: "test",
-      //     lastName: "test",
-      //     email: "test@test.com",
-      //     password: "test123",
-      //   });
-      //   console.log(response);
-      //   expect(response.statusCode).toBe(200);
-      // });
+      it("should return 200 if an account is successfully created", async () => {
+        const response = await request(app).post("/signup").send({
+          firstName: "test",
+          lastName: "test",
+          email: "test@test.com",
+          password: "test123",
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        await prisma.user.delete({
+          where: {
+            email: "test@test.com",
+          },
+        });
+      });
+
       // it("should save the firstName, lastName, email, and password to the database", async () => {
       //   const bodyData = [
       //     {
@@ -50,7 +54,16 @@ describe("/user", () => {
       //   for (const body of bodyData) {
       //     createUser.mockReset();
       //     await request(app).post("/signup").send(body);
+      //     console.log(createUser);
+      //     console.log(createUser.mock);
+      //     console.log(createUser.mock.calls);
       //     expect(createUser.mock.calls.length).toBe(1);
+
+      //     await prisma.user.delete({
+      //       where: {
+      //         email: body.email,
+      //       },
+      //     });
       //   }
       // });
     });
@@ -60,7 +73,7 @@ describe("/user", () => {
         const userInputs = [
           { firstName: "firstTest" },
           { lastName: "lastTest" },
-          { email: "test@test.com" },
+          { email: "test5@test.com" },
           { password: "test123" },
         ];
 
@@ -75,7 +88,7 @@ describe("/user", () => {
         const body = {
           firstName: "firstTest",
           lastName: "lastTest",
-          email: "test@test.com",
+          email: "test6@test.com",
           password: "test1",
         };
 
@@ -89,16 +102,10 @@ describe("/user", () => {
 
         await prisma.user.delete({
           where: {
-            email: "test@test.com",
+            email: "test6@test.com",
           },
         });
       });
     });
-
-    // it("should return 400 if input is invalid", () => {});
-
-    // it("should return 400 if the user is already registered", () => {});
-
-    // it("should return 400 if input is invalid", () => {});
   });
 });
