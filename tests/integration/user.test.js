@@ -2,20 +2,42 @@ const { PrismaClient } = require("@prisma/client");
 const request = require("supertest");
 const prisma = new PrismaClient();
 const app = require("../../index");
+const UserRepository = require("../../database/repository/user");
+const {
+  generateSalt,
+  generateHash,
+  generateAuthToken,
+} = require("../../utils/index");
 require("dotenv").config();
 
 describe("/user", () => {
+  beforeAll(async () => {
+    const userRepo = new UserRepository();
+  });
+
   describe("POST /signup", () => {
-    describe("successful when user input is passed", () => {
-      it("should return 200 if an account is successfully created", async () => {
+    describe("successful when user input is valid", () => {
+      it("should return 200 and create the user", async () => {
+        let password = "test123";
+        let salt = await generateSalt();
+        let hashed = await generateHash(password, salt);
         const response = await request(app).post("/signup").send({
           firstName: "test",
           lastName: "test",
           email: "test@test.com",
-          password: "test123",
+          password: hashed,
         });
 
-        expect(response.statusCode).toBe(200);
+        const { statusCode, body } = response;
+        const token = generateAuthToken({ id: body.id });
+
+        expect(statusCode).toBe(200);
+
+        expect(body).toMatchObject({
+          firstName: "test",
+          lastName: "test",
+          email: "test@test.com",
+        });
 
         await prisma.user.delete({
           where: {
@@ -23,58 +45,15 @@ describe("/user", () => {
           },
         });
       });
-
-      // it("should save the firstName, lastName, email, and password to the database", async () => {
-      //   const bodyData = [
-      //     {
-      //       firstName: "firstTest1",
-      //       lastName: "lastTest1",
-      //       email: "test1@test.com",
-      //       password: "test1",
-      //     },
-      //     {
-      //       firstName: "firstTest2",
-      //       lastName: "lastTest2",
-      //       email: "test2@test.com",
-      //       password: "test2",
-      //     },
-      //     {
-      //       firstName: "firstTest3",
-      //       lastName: "lastTest3",
-      //       email: "test3@test.com",
-      //       password: "test3",
-      //     },
-      //     {
-      //       firstName: "firstTest4",
-      //       lastName: "lastTest4",
-      //       email: "test4@test.com",
-      //       password: "test4",
-      //     },
-      //   ];
-      //   for (const body of bodyData) {
-      //     createUser.mockReset();
-      //     await request(app).post("/signup").send(body);
-      //     console.log(createUser);
-      //     console.log(createUser.mock);
-      //     console.log(createUser.mock.calls);
-      //     expect(createUser.mock.calls.length).toBe(1);
-
-      //     await prisma.user.delete({
-      //       where: {
-      //         email: body.email,
-      //       },
-      //     });
-      //   }
-      // });
     });
 
-    describe("fail when user input is not passed", () => {
+    describe("fail when user input is invalid", () => {
       it("should return 400 when one of the user inputs is not passed", async () => {
         const userInputs = [
           { firstName: "firstTest" },
           { lastName: "lastTest" },
-          { email: "test5@test.com" },
-          { password: "test123" },
+          { email: "test2@test.com" },
+          { password: "test2" },
         ];
 
         for (const input of userInputs) {
@@ -88,8 +67,8 @@ describe("/user", () => {
         const body = {
           firstName: "firstTest",
           lastName: "lastTest",
-          email: "test6@test.com",
-          password: "test1",
+          email: "test3@test.com",
+          password: "test3",
         };
 
         await prisma.user.create({
@@ -102,7 +81,77 @@ describe("/user", () => {
 
         await prisma.user.delete({
           where: {
-            email: "test6@test.com",
+            email: "test3@test.com",
+          },
+        });
+      });
+    });
+  });
+
+  describe("POST /login", () => {
+    describe("successful when user input is valid", () => {
+      it("should return 200 if the user input is valid", async () => {
+        let password = "test123";
+        let salt = await generateSalt();
+        let hashed = await generateHash(password, salt);
+        const body = {
+          firstName: "firstTest",
+          lastName: "lastTest",
+          email: "test4@test.com",
+          password: hashed,
+        };
+
+        await prisma.user.create({
+          data: body,
+        });
+
+        const response = await request(app)
+          .post("/login")
+          .send({
+            email: "test4@test.com",
+            password: "test123",
+          })
+          .expect(200);
+
+        await prisma.user.delete({
+          where: {
+            email: "test4@test.com",
+          },
+        });
+      });
+    });
+
+    describe("fail when user input is not valid", () => {
+      it("should return 400 if the user input is not valid", async () => {
+        let password = "test123";
+        let salt = await generateSalt();
+        let hashed = await generateHash(password, salt);
+        const body = {
+          firstName: "firstTest",
+          lastName: "lastTest",
+          email: "test5@test.com",
+          password: hashed,
+        };
+
+        await prisma.user.create({
+          data: body,
+        });
+
+        const inputs = [
+          { email: "test5@gmail.com", password: hashed },
+          { email: "test5@test.com", password: "invalid" },
+        ];
+
+        for (const input of inputs) {
+          const response = await request(app)
+            .post("/login")
+            .send(input)
+            .expect(400);
+        }
+
+        await prisma.user.delete({
+          where: {
+            email: "test5@test.com",
           },
         });
       });
